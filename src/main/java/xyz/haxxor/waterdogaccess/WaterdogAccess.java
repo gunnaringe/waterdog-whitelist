@@ -31,6 +31,7 @@ public class WaterdogAccess extends Plugin {
         this.getProxy().getEventManager().subscribe(ServerPreConnectEvent.class, this::onPreConnect);
         this.getProxy().setJoinHandler(new JoinHandler(this.database, this.getLogger()));
         this.getProxy().getCommandMap().registerCommand(new AccessCommand(operations, this.getLogger()));
+        this.getProxy().getCommandMap().registerCommand(new WorldCommand());
 
         try {
             this.apiServer = new ApiServer(API_PORT, operations, this.getLogger());
