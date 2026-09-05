@@ -16,7 +16,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      # WaterdogPE's own build depends on CloudburstMC snapshot artifacts that aren't mirrored
+      # on repo.waterdog.dev, so Maven can't resolve waterdog's full transitive graph even at
+      # provided scope. Installing the actual runtime jar (a shaded fat jar, no POM deps of its
+      # own) as a synthetic local artifact sidesteps that - pom.xml depends on this exact
+      # coordinate. Keep this pinned build in sync with the one deployment.yaml fetches.
+      - run: |
+          curl -fSL -o /tmp/waterdog-runtime.jar https://repo.waterdog.dev/main/dev/waterdog/waterdogpe/waterdog/2.0.4-SNAPSHOT/waterdog-2.0.4-20260903.213911-111.jar
+          mvn -B install:install-file -Dfile=/tmp/waterdog-runtime.jar \
+            -DgroupId=dev.waterdog.waterdogpe -DartifactId=waterdog -Dversion=2.0.4-local1 -Dpackaging=jar
       - run: mvn -B package
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/waterdog-whitelist.jar
+          files: target/waterdog-access.jar
