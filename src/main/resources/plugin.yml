@@ -1,0 +1,4 @@
+name: "WaterdogWhitelist"
+author: "gunnaringe"
+version: "1.0.0"
+main: "dev.gunnaringe.waterdogwhitelist.WaterdogWhitelist"
