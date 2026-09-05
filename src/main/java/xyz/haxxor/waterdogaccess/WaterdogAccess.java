@@ -1,6 +1,8 @@
 package xyz.haxxor.waterdogaccess;
 
+import dev.waterdog.waterdogpe.event.defaults.PlayerDisconnectedEvent;
 import dev.waterdog.waterdogpe.event.defaults.PlayerLoginEvent;
+import dev.waterdog.waterdogpe.event.defaults.ServerConnectedEvent;
 import dev.waterdog.waterdogpe.event.defaults.ServerPreConnectEvent;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
 import dev.waterdog.waterdogpe.plugin.Plugin;
@@ -8,6 +10,9 @@ import dev.waterdog.waterdogpe.plugin.Plugin;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WaterdogAccess extends Plugin {
 
@@ -15,6 +20,7 @@ public class WaterdogAccess extends Plugin {
 
     private AccessDatabase database;
     private ApiServer apiServer;
+    private final Map<UUID, MenuHandler> menus = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -29,6 +35,8 @@ public class WaterdogAccess extends Plugin {
 
         this.getProxy().getEventManager().subscribe(PlayerLoginEvent.class, this::onLogin);
         this.getProxy().getEventManager().subscribe(ServerPreConnectEvent.class, this::onPreConnect);
+        this.getProxy().getEventManager().subscribe(ServerConnectedEvent.class, this::onServerConnected);
+        this.getProxy().getEventManager().subscribe(PlayerDisconnectedEvent.class, this::onDisconnect);
         this.getProxy().setJoinHandler(new JoinHandler(this.database, this.getLogger()));
         this.getProxy().getCommandMap().registerCommand(new AccessCommand(operations, this.getLogger()));
         this.getProxy().getCommandMap().registerCommand(new WorldCommand());
@@ -79,11 +87,35 @@ public class WaterdogAccess extends Plugin {
 
         if (allowed) {
             this.getLogger().info("Login allowed: {} ({}) from {}", gamertag, xuid, address);
+            MenuHandler menu = new MenuHandler(player, this.database);
+            this.menus.put(player.getUniqueId(), menu);
+            player.getPluginPacketHandlers().add(menu);
         } else {
             event.setCancelled(true);
             event.setCancelReason("§cYou don't have access to this server.");
             this.getLogger().warn("Login denied: {} ({}) from {} - no access anywhere", gamertag, xuid, address);
         }
+    }
+
+    /**
+     * "lobby" has no real hub to explore - the moment a player lands there (initial join, or a
+     * later /world lobby) we replace it with a native Bedrock form listing whatever worlds this
+     * player currently has access to, so picking one is a controller-friendly button press
+     * instead of typing a command. See MenuHandler for why the handler is registered once at
+     * login rather than re-added here.
+     */
+    private void onServerConnected(ServerConnectedEvent event) {
+        if (!"lobby".equals(event.getTargetServer().getServerName())) {
+            return;
+        }
+        MenuHandler menu = this.menus.get(event.getPlayer().getUniqueId());
+        if (menu != null) {
+            menu.sendMenu();
+        }
+    }
+
+    private void onDisconnect(PlayerDisconnectedEvent event) {
+        this.menus.remove(event.getPlayer().getUniqueId());
     }
 
     /**
