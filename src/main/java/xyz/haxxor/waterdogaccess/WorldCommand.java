@@ -1,10 +1,18 @@
 package xyz.haxxor.waterdogaccess;
 
+import dev.waterdog.waterdogpe.ProxyServer;
 import dev.waterdog.waterdogpe.command.Command;
 import dev.waterdog.waterdogpe.command.CommandSender;
 import dev.waterdog.waterdogpe.command.CommandSettings;
 import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo;
 import dev.waterdog.waterdogpe.player.ProxiedPlayer;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandEnumData;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandOverloadData;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandParam;
+import org.cloudburstmc.protocol.bedrock.data.command.CommandParamData;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * A replacement for WaterdogPE's built-in /server: that command's own permission gate
@@ -19,11 +27,14 @@ import dev.waterdog.waterdogpe.player.ProxiedPlayer;
  */
 public class WorldCommand extends Command {
 
-    public WorldCommand() {
+    private final ProxyServer proxy;
+
+    public WorldCommand(ProxyServer proxy) {
         super("world", CommandSettings.builder()
                 .setDescription("Switch to another world")
                 .setUsageMessage("world <name>")
                 .build());
+        this.proxy = proxy;
     }
 
     @Override
@@ -38,5 +49,28 @@ public class WorldCommand extends Command {
         }
         ((ProxiedPlayer) sender).connect(server);
         return true;
+    }
+
+    /**
+     * Declares "name" as a soft enum of the configured server names instead of a plain string, so
+     * the client renders it as a tab-completable dropdown while typing the command - the same
+     * mechanism vanilla commands like /gamemode use. Built once at registration (proxy startup),
+     * so a server added to config.yml needs a proxy restart to show up in the suggestions, same as
+     * it already needs one to be usable at all.
+     */
+    @Override
+    protected CommandOverloadData[] buildCommandOverloads() {
+        Map<String, java.util.Set<org.cloudburstmc.protocol.bedrock.data.command.CommandEnumConstraint>> values = new LinkedHashMap<>();
+        for (ServerInfo server : this.proxy.getServers()) {
+            values.put(server.getServerName(), java.util.Set.of());
+        }
+
+        CommandParamData param = new CommandParamData();
+        param.setName("name");
+        param.setOptional(false);
+        param.setType(CommandParam.STRING);
+        param.setEnumData(new CommandEnumData("WorldName", values, true));
+
+        return new CommandOverloadData[]{new CommandOverloadData(false, new CommandParamData[]{param})};
     }
 }
