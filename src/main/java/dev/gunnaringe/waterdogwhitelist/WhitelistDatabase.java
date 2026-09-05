@@ -27,6 +27,15 @@ public class WhitelistDatabase implements AutoCloseable {
     private final Connection connection;
 
     public WhitelistDatabase(File databaseFile) throws SQLException {
+        try {
+            // DriverManager's own ServiceLoader-based discovery runs once at JVM boot, using the
+            // system classloader - it never sees drivers shaded into a jar that WaterdogPE's plugin
+            // loader loads later with its own classloader. Forcing the class to load here runs
+            // org.sqlite.JDBC's static initializer, which self-registers with DriverManager directly.
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("sqlite-jdbc driver not on the classpath", e);
+        }
         this.connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getAbsolutePath());
         try (Statement statement = this.connection.createStatement()) {
             statement.execute("""
