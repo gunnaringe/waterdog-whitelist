@@ -9,6 +9,8 @@ import java.sql.SQLException;
 public class WaterdogWhitelist extends Plugin {
 
     private WhitelistDatabase database;
+    private CliWatcher cliWatcher;
+    private Thread cliThread;
 
     @Override
     public void onEnable() {
@@ -19,13 +21,24 @@ public class WaterdogWhitelist extends Plugin {
             return;
         }
 
+        WhitelistOperations operations = new WhitelistOperations(this.database);
+
         this.getProxy().getEventManager().subscribe(PlayerLoginEvent.class, this::onLogin);
-        this.getProxy().getCommandMap().registerCommand(new WhitelistCommand(this.database, this.getLogger()));
-        this.getLogger().info("WaterdogWhitelist enabled - deny by default, use /whitelist to manage");
+        this.getProxy().getCommandMap().registerCommand(new WhitelistCommand(operations, this.getLogger()));
+
+        this.cliWatcher = new CliWatcher(new File(this.getDataFolder(), "cli"), operations, this.getLogger());
+        this.cliThread = new Thread(this.cliWatcher, "WaterdogWhitelist-CLI");
+        this.cliThread.setDaemon(true);
+        this.cliThread.start();
+
+        this.getLogger().info("WaterdogWhitelist enabled - deny by default, use /whitelist or the admin scripts to manage");
     }
 
     @Override
     public void onDisable() {
+        if (this.cliWatcher != null) {
+            this.cliWatcher.stop();
+        }
         if (this.database != null) {
             try {
                 this.database.close();
