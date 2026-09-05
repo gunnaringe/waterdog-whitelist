@@ -1,4 +1,4 @@
 name: "WaterdogWhitelist"
 author: "gunnaringe"
-version: "1.0.1"
-main: "dev.gunnaringe.waterdogwhitelist.WaterdogWhitelist"
+version: "1.0.2"
+main: "xyz.haxxor.waterdogwhitelist.WaterdogWhitelist"

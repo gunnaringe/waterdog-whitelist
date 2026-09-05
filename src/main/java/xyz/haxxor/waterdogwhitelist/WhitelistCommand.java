@@ -1,4 +1,4 @@
-package dev.gunnaringe.waterdogwhitelist;
+package xyz.haxxor.waterdogwhitelist;
 
 import dev.waterdog.waterdogpe.command.Command;
 import dev.waterdog.waterdogpe.command.CommandSender;

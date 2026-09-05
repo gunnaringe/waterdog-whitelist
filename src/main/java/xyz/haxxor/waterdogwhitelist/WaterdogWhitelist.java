@@ -1,4 +1,4 @@
-package dev.gunnaringe.waterdogwhitelist;
+package xyz.haxxor.waterdogwhitelist;
 
 import dev.waterdog.waterdogpe.event.defaults.PlayerLoginEvent;
 import dev.waterdog.waterdogpe.plugin.Plugin;

@@ -1,4 +1,4 @@
-package dev.gunnaringe.waterdogwhitelist;
+package xyz.haxxor.waterdogwhitelist;
 
 import java.io.File;
 import java.sql.Connection;
